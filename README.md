@@ -61,7 +61,7 @@
 
 1.  **克隆项目**
     ```bash
-    git clone https://github.com/yourusername/OKRTracker.git
+    git clone https://github.com/HJinTao/OKR-Tracker.git
     ```
 
 2.  **打开项目**

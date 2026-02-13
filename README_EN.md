@@ -61,7 +61,7 @@ Unlike traditional to-do list apps, OKR Tracker breaks down **grand visions** in
 
 1.  **Clone Project**
     ```bash
-    git clone https://github.com/yourusername/OKRTracker.git
+    git clone https://github.com/HJinTao/OKR-Tracker.git
     ```
 
 2.  **Open Project**
