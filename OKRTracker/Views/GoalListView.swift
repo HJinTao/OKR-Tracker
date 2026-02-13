@@ -40,25 +40,12 @@ struct GoalListView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Goals".localized)
+            .navigationTitle((showArchived ? "Archived Goals" : "Goals").localized)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    HStack {
-                        Menu {
-                            Picker("Language", selection: $localization.currentLanguage) {
-                                ForEach(LocalizationManager.Language.allCases) { lang in
-                                    Text(lang.rawValue).tag(lang)
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "globe")
-                                .font(.system(size: 20))
-                        }
-                        
-                        Button(action: { showArchived.toggle() }) {
-                            Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                                .font(.system(size: 20))
-                        }
+                    Button(action: { showArchived.toggle() }) {
+                        Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
+                            .font(.system(size: 20))
                     }
                 }
                 

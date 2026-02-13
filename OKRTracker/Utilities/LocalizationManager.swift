@@ -56,6 +56,16 @@ class LocalizationManager: ObservableObject {
         "Progress": [.english: "Progress", .chinese: "进度"],
         "Show Archived": [.english: "Show Archived", .chinese: "显示已归档"],
         "Hide Archived": [.english: "Hide Archived", .chinese: "隐藏已归档"],
+        "Archived Goals": [.english: "Archived Goals", .chinese: "已归档目标"],
+        
+        // Settings
+        "Settings": [.english: "Settings", .chinese: "设置"],
+        "Appearance": [.english: "Appearance", .chinese: "外观"],
+        "Light": [.english: "Light", .chinese: "浅色"],
+        "Dark": [.english: "Dark", .chinese: "深色"],
+        "System": [.english: "System", .chinese: "系统"],
+        "Language": [.english: "Language", .chinese: "语言"],
+        "Select Language": [.english: "Select Language", .chinese: "选择语言"],
         
         // AddOKRView
         "New Objective": [.english: "New Objective", .chinese: "新建目标"],

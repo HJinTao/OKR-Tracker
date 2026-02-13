@@ -20,6 +20,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Daily Plan".localized, systemImage: "list.bullet.rectangle.portrait.fill")
                 }
+            
+            SettingsView()
+                .tabItem {
+                    Label("Settings".localized, systemImage: "gear")
+                }
         }
     }
 }
