@@ -159,6 +159,13 @@ class LocalizationManager: ObservableObject {
         
         "Delete Goal": [.english: "Delete Goal", .chinese: "删除目标"],
         "Are you sure you want to delete this goal? This action cannot be undone.": [.english: "Are you sure you want to delete this goal? This action cannot be undone.", .chinese: "你确定要删除这个目标吗？此操作无法撤销。"],
+        "Delete Key Result": [.english: "Delete Key Result", .chinese: "删除关键结果"],
+        "Delete Key Result?": [.english: "Delete Key Result?", .chinese: "删除关键结果?"],
+        "This action cannot be undone.": [.english: "This action cannot be undone.", .chinese: "此操作无法撤销。"],
+        "Value Contribution": [.english: "Value Contribution", .chinese: "数值贡献"],
+        "How much this task adds to progress": [.english: "How much this task adds to progress", .chinese: "此任务对进度的贡献值"],
+        "Archived": [.english: "Archived", .chinese: "已归档"],
+        "Edit Task": [.english: "Edit Task", .chinese: "编辑任务"],
     ]
 }
 

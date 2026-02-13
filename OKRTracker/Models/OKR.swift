@@ -93,11 +93,11 @@ struct OKR: Identifiable, Codable {
                 valueAtDate = 0.0
             }
             
-            let krProgress = kr.targetValue > 0 ? min(valueAtDate / kr.targetValue, 1.0) : 0.0
+            let krProgress = kr.targetValue > 0 ? max(0.0, min(valueAtDate / kr.targetValue, 1.0)) : 0.0
             weightedProgress += krProgress * kr.weight
         }
         
-        return totalWeight > 0 ? weightedProgress / totalWeight : 0.0
+        return totalWeight > 0 ? max(0.0, weightedProgress / totalWeight) : 0.0
     }
 }
 

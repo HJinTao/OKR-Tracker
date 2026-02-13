@@ -726,25 +726,30 @@ struct DetailedHeatmapView: View {
         // Filter OKRs if selected
         let okrsToCheck = selectedGoalId == nil ? store.okrs : store.okrs.filter { $0.id == selectedGoalId }
         
-        let completedCount = okrsToCheck.flatMap { $0.keyResults }
-            .flatMap { $0.tasks }
-            .filter { task in
-                task.completedDates.contains { calendar.isDate($0, inSameDayAs: date) }
+        // Calculate total progress increment for this date
+        var totalProgressIncrement = 0.0
+        
+        for okr in okrsToCheck {
+            for kr in okr.keyResults {
+                // Find logs for this date
+                let logsForDate = kr.logs.filter { calendar.isDate($0.date, inSameDayAs: date) }
+                
+                for log in logsForDate {
+                    // Only count positive progress
+                    if log.newValue > log.previousValue {
+                        if kr.targetValue > 0 {
+                            let increment = log.newValue - log.previousValue
+                            totalProgressIncrement += increment / kr.targetValue
+                        }
+                    }
+                }
             }
-            .count
+        }
         
-        // Count activity logs on this date
-        let logs = okrsToCheck.flatMap { $0.keyResults }
-            .flatMap { $0.logs }
-            .filter { calendar.isDate($0.date, inSameDayAs: date) }
-            .count
-        
-        let totalActivity = completedCount + logs
-        
-        if totalActivity == 0 { return 0 }
-        if totalActivity <= 2 { return 1 }
-        if totalActivity <= 4 { return 2 }
-        if totalActivity <= 6 { return 3 }
+        if totalProgressIncrement <= 0.001 { return 0 }
+        if totalProgressIncrement <= 0.2 { return 1 }
+        if totalProgressIncrement <= 0.5 { return 2 }
+        if totalProgressIncrement <= 0.8 { return 3 }
         return 4
     }
     

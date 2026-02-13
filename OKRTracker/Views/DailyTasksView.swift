@@ -142,7 +142,32 @@ struct DailyTasksView: View {
                 // Decrease KR progress by task weight
                 if task.weight > 0 {
                     let newValue = max(0, kr.currentValue - task.weight)
-                    updateKRProgress(krIndex: krIndex, okrIndex: okrIndex, newValue: newValue, message: "Task uncompleted: \(task.title)")
+                    
+                    // Instead of adding "uncompleted" log, try to remove the previous "completed" log
+                    // This keeps history clean as requested
+                    if let logIndex = kr.logs.firstIndex(where: { 
+                        $0.message.contains("Task completed: \(task.title)") && 
+                        calendar.isDate($0.date, inSameDayAs: Date()) 
+                    }) {
+                        kr.logs.remove(at: logIndex)
+                        
+                        // Just update value without adding new log
+                        store.okrs[okrIndex].keyResults[krIndex].currentValue = newValue
+                        store.okrs[okrIndex].keyResults[krIndex].tasks[taskIndex] = task
+                        // Manually trigger update since we bypassed updateKRProgress
+                        store.okrs[okrIndex].keyResults[krIndex] = store.okrs[okrIndex].keyResults[krIndex]
+                    } else {
+                        // Fallback if log not found (e.g. from different day), just update value
+                        // Maybe user doesn't want "Uncompleted" log at all?
+                        // "if completed then cancelled, no History record"
+                        // So we just update value silently if we can't find the original log to delete.
+                        store.okrs[okrIndex].keyResults[krIndex].currentValue = newValue
+                        store.okrs[okrIndex].keyResults[krIndex].tasks[taskIndex] = task
+                        store.okrs[okrIndex].keyResults[krIndex] = store.okrs[okrIndex].keyResults[krIndex]
+                    }
+                } else {
+                    // Weight 0, just update task status
+                    store.okrs[okrIndex].keyResults[krIndex].tasks[taskIndex] = task
                 }
             } else {
                 // Not completed, add completion

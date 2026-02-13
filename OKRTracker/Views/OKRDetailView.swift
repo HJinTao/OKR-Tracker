@@ -10,6 +10,10 @@ struct OKRDetailView: View {
     @State private var isEditing = false
     @State private var showingIconPicker = false
     
+    // Alert state for deletion
+    @State private var showingDeleteAlert = false
+    @State private var indexToDelete: IndexSet?
+    
     let availableIcons = [
         "target", "star.fill", "heart.fill", "flame.fill", "bolt.fill",
         "leaf.fill", "drop.fill", "book.fill", "graduationcap.fill", "briefcase.fill",
@@ -97,7 +101,7 @@ struct OKRDetailView: View {
                             Toggle("Archived", isOn: $okr.isArchived)
                                 .labelsHidden()
                             if okr.isArchived {
-                                Text("Archived")
+                                Text("Archived".localized)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -191,12 +195,40 @@ struct OKRDetailView: View {
                             .padding()
                     } else {
                         ForEach($okr.keyResults) { $kr in
-                            KeyResultCard(kr: $kr, isEditing: isEditing)
-                        }
-                        .onDelete { indexSet in
-                            if isEditing {
-                                okr.keyResults.remove(atOffsets: indexSet)
+                            VStack {
+                                KeyResultCard(kr: $kr, isEditing: isEditing)
+                                
+                                if isEditing {
+                                    Button(action: {
+                                        if let index = okr.keyResults.firstIndex(where: { $0.id == $kr.wrappedValue.id }) {
+                                            indexToDelete = IndexSet(integer: index)
+                                            showingDeleteAlert = true
+                                        }
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "trash")
+                                            Text("Delete Key Result".localized)
+                                        }
+                                        .foregroundColor(.red)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.red.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 8)
+                                }
                             }
+                        }
+                        .alert("Delete Key Result?".localized, isPresented: $showingDeleteAlert) {
+                            Button("Cancel".localized, role: .cancel) { }
+                            Button("Delete".localized, role: .destructive) {
+                                if let indexSet = indexToDelete {
+                                    okr.keyResults.remove(atOffsets: indexSet)
+                                }
+                            }
+                        } message: {
+                            Text("This action cannot be undone.".localized)
                         }
                     }
                 }
@@ -552,7 +584,7 @@ struct KeyResultCard: View {
             }
             
             // History Toggle
-            if !kr.logs.isEmpty && !isEditing {
+            if !kr.logs.isEmpty {
                 Divider()
                 Button(action: { showingHistory.toggle() }) {
                     HStack {
@@ -569,7 +601,7 @@ struct KeyResultCard: View {
                 
                 if showingHistory {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(kr.logs) { log in
+                        ForEach(kr.logs.filter { !$0.message.contains("uncompleted") }) { log in
                             HStack(alignment: .top) {
                                 Circle()
                                     .fill(Color.blue)
@@ -661,15 +693,27 @@ struct AddTaskView: View {
                         }
                     }
                     HStack {
-                        Text("Weight (Value)".localized)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Value Contribution".localized)
+                            Text("How much this task adds to progress".localized)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                         Spacer()
                         TextField("0", value: Binding(
                             get: { weight },
-                            set: { weight = max(0, $0) }
+                            set: { 
+                                // Limit weight to not exceed KR target value
+                                let maxAllowed = kr.targetValue
+                                weight = max(0, min(maxAllowed, $0)) 
+                            }
                         ), formatter: NumberFormatter())
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 50)
+                            .padding(4)
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .cornerRadius(4)
                     }
                 }
             }
