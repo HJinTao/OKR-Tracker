@@ -221,7 +221,10 @@ struct TaskRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Button(action: onToggle) {
+            Button(action: {
+                HapticManager.shared.impact(style: .medium)
+                onToggle()
+            }) {
                 Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
                     .font(.title2)
                     .foregroundColor(isCompleted ? .gray : color)

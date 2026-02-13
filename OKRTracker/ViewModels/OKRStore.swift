@@ -5,20 +5,25 @@ import SwiftUI
 class OKRStore: ObservableObject {
     @Published var okrs: [OKR] = [] {
         didSet {
-            // Auto-archive completed OKRs
-            var updated = false
-            for i in 0..<okrs.count {
-                if okrs[i].progress >= 1.0 && !okrs[i].isArchived {
-                    okrs[i].isArchived = true
-                    updated = true
-                }
-            }
-            
-            // If we updated okrs, this didSet will be called again recursively.
-            // To prevent double saving or infinite loops if logic was different, we rely on the check above.
-            // The recursion will stop because isArchived is now true.
+            // Auto-archive completed OKRs logic has been moved to checkAndArchiveOKRs
+            // to allow animation to play before archiving.
+            // We still save on every change.
             
             save()
+        }
+    }
+    
+    // Call this manually or from UI when animation completes
+    func checkAndArchiveOKRs() {
+        var updated = false
+        for i in 0..<okrs.count {
+            if okrs[i].progress >= 1.0 && !okrs[i].isArchived {
+                // Delay archiving to allow animation to play? 
+                // Actually, the view might disappear if we archive it immediately depending on how the list filters.
+                // Let's just set it here, but maybe we need a delay mechanism.
+                okrs[i].isArchived = true
+                updated = true
+            }
         }
     }
     

@@ -2,6 +2,7 @@ import SwiftUI
 import Charts
 
 struct OKRDetailView: View {
+    @ObservedObject var store: OKRStore // Add store access
     @Binding var okr: OKR
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject var localization = LocalizationManager.shared
@@ -13,6 +14,10 @@ struct OKRDetailView: View {
     // Alert state for deletion
     @State private var showingDeleteAlert = false
     @State private var indexToDelete: IndexSet?
+    
+    // Celebration state
+    @State private var showCelebration = false
+    @State private var previousProgress: Double = 0.0
     
     let availableIcons = [
         "target", "star.fill", "heart.fill", "flame.fill", "bolt.fill",
@@ -297,6 +302,22 @@ struct OKRDetailView: View {
             }
             .presentationDetents([.medium])
         }
+        .celebration(trigger: $showCelebration)
+        .onChange(of: okr.progress) { newValue in
+            // If progress reaches 100% and wasn't 100% before, trigger celebration
+            if newValue >= 1.0 && previousProgress < 1.0 {
+                showCelebration = true
+                
+                // Delay auto-archive to let animation play
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    store.checkAndArchiveOKRs()
+                }
+            }
+            previousProgress = newValue
+        }
+        .onAppear {
+            previousProgress = okr.progress
+        }
     }
     
     var timeProgressColor: Color {
@@ -326,6 +347,10 @@ struct KeyResultCard: View {
     @State private var showingTaskSheet = false // New for adding tasks
     @State private var editingTask: KRTask? // New for editing existing task
     @ObservedObject var localization = LocalizationManager.shared
+    
+    var filteredLogs: [ActivityLog] {
+        kr.logs.filter { !$0.message.contains("uncompleted") }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -584,11 +609,11 @@ struct KeyResultCard: View {
             }
             
             // History Toggle
-            if !kr.logs.isEmpty {
+            if !filteredLogs.isEmpty {
                 Divider()
                 Button(action: { showingHistory.toggle() }) {
                     HStack {
-                        Text("\("History".localized) (\(kr.logs.count))")
+                        Text("\("History".localized) (\(filteredLogs.count))")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
@@ -601,7 +626,7 @@ struct KeyResultCard: View {
                 
                 if showingHistory {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(kr.logs.filter { !$0.message.contains("uncompleted") }) { log in
+                        ForEach(filteredLogs) { log in
                             HStack(alignment: .top) {
                                 Circle()
                                     .fill(Color.blue)
@@ -618,6 +643,19 @@ struct KeyResultCard: View {
                                 Spacer()
                                 Text("\(log.newValue, specifier: "%.1f")")
                                     .font(.caption.bold())
+                                
+                                if isEditing {
+                                    Button(action: {
+                                        if let index = kr.logs.firstIndex(where: { $0.id == log.id }) {
+                                            kr.logs.remove(at: index)
+                                        }
+                                    }) {
+                                        Image(systemName: "trash")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                    .padding(.leading, 8)
+                                }
                             }
                         }
                     }
@@ -794,6 +832,7 @@ struct UpdateProgressView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Update".localized) {
+                        HapticManager.shared.impact(style: .medium)
                         let log = ActivityLog(
                             id: UUID(),
                             date: Date(),

@@ -191,23 +191,35 @@ struct DashboardView: View {
         let calendar = Calendar.current
         
         // Count completed tasks on this date
-        let completedTasks = store.okrs.flatMap { $0.keyResults }
-            .flatMap { $0.tasks }
-            .filter { $0.isCompleted && calendar.isDate($0.date, inSameDayAs: date) }
-            .count
+        // Use the same logic as detailed view: progress based
+        let okrsToCheck = store.okrs // All OKRs
         
-        // Count activity logs on this date
-        let logs = store.okrs.flatMap { $0.keyResults }
-            .flatMap { $0.logs }
-            .filter { calendar.isDate($0.date, inSameDayAs: date) }
-            .count
+        var totalProgressIncrement = 0.0
         
-        let totalActivity = completedTasks + logs
+        for okr in okrsToCheck {
+            for kr in okr.keyResults {
+                let logsForDate = kr.logs.filter { calendar.isDate($0.date, inSameDayAs: date) }
+                
+                let previousDayLogs = kr.logs.filter { $0.date < calendar.startOfDay(for: date) }
+                let startValue = previousDayLogs.sorted(by: { $0.date > $1.date }).first?.newValue ?? 0.0
+                
+                if let lastLogToday = logsForDate.sorted(by: { $0.date > $1.date }).first {
+                    let endValue = lastLogToday.newValue
+                    
+                    if endValue > startValue {
+                        if kr.targetValue > 0 {
+                            let increment = endValue - startValue
+                            totalProgressIncrement += increment / kr.targetValue
+                        }
+                    }
+                }
+            }
+        }
         
-        if totalActivity == 0 { return 0 }
-        if totalActivity <= 2 { return 1 }
-        if totalActivity <= 4 { return 2 }
-        if totalActivity <= 6 { return 3 }
+        if totalProgressIncrement <= 0.001 { return 0 }
+        if totalProgressIncrement <= 0.2 { return 1 }
+        if totalProgressIncrement <= 0.5 { return 2 }
+        if totalProgressIncrement <= 0.8 { return 3 }
         return 4
     }
     
@@ -734,11 +746,23 @@ struct DetailedHeatmapView: View {
                 // Find logs for this date
                 let logsForDate = kr.logs.filter { calendar.isDate($0.date, inSameDayAs: date) }
                 
-                for log in logsForDate {
-                    // Only count positive progress
-                    if log.newValue > log.previousValue {
+                // Get the NET progress change for the day by comparing the last value of the previous day
+                // with the last value of the current day. This handles quick updates correctly.
+                
+                // 1. Find the value at the end of the previous day
+                let previousDayLogs = kr.logs.filter { $0.date < calendar.startOfDay(for: date) }
+                let startValue = previousDayLogs.sorted(by: { $0.date > $1.date }).first?.newValue ?? 0.0
+                
+                // 2. Find the value at the end of the current day
+                // If there are logs today, the latest one represents the end value
+                // If no logs today, the value didn't change from startValue
+                if let lastLogToday = logsForDate.sorted(by: { $0.date > $1.date }).first {
+                    let endValue = lastLogToday.newValue
+                    
+                    // 3. Calculate net positive change
+                    if endValue > startValue {
                         if kr.targetValue > 0 {
-                            let increment = log.newValue - log.previousValue
+                            let increment = endValue - startValue
                             totalProgressIncrement += increment / kr.targetValue
                         }
                     }

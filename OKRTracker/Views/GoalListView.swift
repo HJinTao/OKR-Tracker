@@ -23,7 +23,7 @@ struct GoalListView: View {
                         ForEach($store.okrs) { $okr in
                             if okr.isArchived == showArchived {
                                 ZStack {
-                                    NavigationLink(destination: OKRDetailView(okr: $okr)) {
+                                    NavigationLink(destination: OKRDetailView(store: store, okr: $okr)) {
                                         EmptyView()
                                     }
                                     .opacity(0)
