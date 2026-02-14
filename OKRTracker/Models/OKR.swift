@@ -13,18 +13,22 @@ struct OKR: Identifiable, Codable {
     
     // Auto-calculate health based on time remaining vs progress
     var health: OKRHealth {
-        if isCompleted { return .completed }
-        if progress >= 1.0 { return .completed }
+        if isCompleted || progress >= 1.0 { return .completed }
         
         let totalTime = dueDate.timeIntervalSince(startDate)
         let elapsed = Date().timeIntervalSince(startDate)
         let timeRatio = totalTime > 0 ? elapsed / totalTime : 1.0
         
-        // Simple logic: if less than 20% time left and less than 80% progress -> At Risk
-        // For now, let's just use progress thresholds relative to time
-        if timeRatio > 0.5 && progress < 0.2 { return .atRisk }
-        if timeRatio > 0.8 && progress < 0.6 { return .offTrack }
-        return .onTrack // Default
+        // Improved health calculation logic:
+        // - Off Track: Less than 50% progress with more than 80% time elapsed
+        // - At Risk: Less than 70% progress with more than 50% time elapsed  
+        // - On Track: Otherwise
+        if timeRatio > 0.8 && progress < 0.5 {
+            return .offTrack
+        } else if timeRatio > 0.5 && progress < 0.7 {
+            return .atRisk
+        }
+        return .onTrack
     }
     
     var progress: Double {
@@ -93,7 +97,13 @@ struct OKR: Identifiable, Codable {
                 valueAtDate = 0.0
             }
             
-            let krProgress = kr.targetValue > 0 ? max(0.0, min(valueAtDate / kr.targetValue, 1.0)) : 0.0
+            let krProgress: Double
+            if kr.type == .boolean {
+                // Boolean type: progress is either 0 (false) or 1 (true)
+                krProgress = valueAtDate >= 1.0 ? 1.0 : 0.0
+            } else {
+                krProgress = kr.targetValue > 0 ? max(0.0, min(valueAtDate / kr.targetValue, 1.0)) : 0.0
+            }
             weightedProgress += krProgress * kr.weight
         }
         
@@ -133,6 +143,10 @@ struct KeyResult: Identifiable, Codable {
     var tasks: [KRTask] = [] // Daily tasks linked to this KR
     
     var progress: Double {
+        if type == .boolean {
+            // Boolean type: progress is either 0 (false) or 1 (true)
+            return currentValue >= 1.0 ? 1.0 : 0.0
+        }
         guard targetValue > 0 else { return 0.0 }
         return min(currentValue / targetValue, 1.0)
     }
@@ -164,9 +178,19 @@ struct KRTask: Identifiable, Codable {
     var completedDates: [Date] = [] // History of completion dates (normalized to start of day)
     var createdAt: Date = Date()
     
-    // Legacy support or simple check for non-recurring
+    // Check if task is completed for today (non-recurring) or has any completions (recurring)
     var isCompleted: Bool {
-        return false // Placeholder
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        if recurrence == .none {
+            // For non-recurring tasks, check if completed on its specific date
+            let taskDate = calendar.startOfDay(for: date)
+            return completedDates.contains { calendar.isDate($0, inSameDayAs: taskDate) }
+        } else {
+            // For recurring tasks, check if completed today
+            return completedDates.contains { calendar.isDate($0, inSameDayAs: today) }
+        }
     }
 }
 

@@ -207,7 +207,10 @@ struct DashboardView: View {
                     let endValue = lastLogToday.newValue
                     
                     if endValue > startValue {
-                        if kr.targetValue > 0 {
+                        if kr.type == .boolean {
+                            // Boolean type: progress increment is either 0 or 1
+                            totalProgressIncrement += 1.0
+                        } else if kr.targetValue > 0 {
                             let increment = endValue - startValue
                             totalProgressIncrement += increment / kr.targetValue
                         }
@@ -216,10 +219,11 @@ struct DashboardView: View {
             }
         }
         
+        // Adjust thresholds for better distribution
         if totalProgressIncrement <= 0.001 { return 0 }
-        if totalProgressIncrement <= 0.2 { return 1 }
-        if totalProgressIncrement <= 0.5 { return 2 }
-        if totalProgressIncrement <= 0.8 { return 3 }
+        if totalProgressIncrement <= 0.1 { return 1 }
+        if totalProgressIncrement <= 0.3 { return 2 }
+        if totalProgressIncrement <= 0.6 { return 3 }
         return 4
     }
     
@@ -761,7 +765,10 @@ struct DetailedHeatmapView: View {
                     
                     // 3. Calculate net positive change
                     if endValue > startValue {
-                        if kr.targetValue > 0 {
+                        if kr.type == .boolean {
+                            // Boolean type: progress increment is either 0 or 1
+                            totalProgressIncrement += 1.0
+                        } else if kr.targetValue > 0 {
                             let increment = endValue - startValue
                             totalProgressIncrement += increment / kr.targetValue
                         }
@@ -771,9 +778,9 @@ struct DetailedHeatmapView: View {
         }
         
         if totalProgressIncrement <= 0.001 { return 0 }
-        if totalProgressIncrement <= 0.2 { return 1 }
-        if totalProgressIncrement <= 0.5 { return 2 }
-        if totalProgressIncrement <= 0.8 { return 3 }
+        if totalProgressIncrement <= 0.1 { return 1 }
+        if totalProgressIncrement <= 0.3 { return 2 }
+        if totalProgressIncrement <= 0.6 { return 3 }
         return 4
     }
     

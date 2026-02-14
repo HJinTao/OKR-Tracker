@@ -16,12 +16,10 @@ class OKRStore: ObservableObject {
     // Call this manually or from UI when animation completes
     func checkAndArchiveOKRs() {
         var updated = false
-        for i in 0..<okrs.count {
-            if okrs[i].progress >= 1.0 && !okrs[i].isArchived {
-                // Delay archiving to allow animation to play? 
-                // Actually, the view might disappear if we archive it immediately depending on how the list filters.
-                // Let's just set it here, but maybe we need a delay mechanism.
-                okrs[i].isArchived = true
+        // Use indices for safe iteration
+        for index in okrs.indices {
+            if okrs[index].progress >= 1.0 && !okrs[index].isArchived {
+                okrs[index].isArchived = true
                 updated = true
             }
         }
@@ -85,21 +83,31 @@ class OKRStore: ObservableObject {
     
     private func load() {
         let url = getDocumentsDirectory().appendingPathComponent(fileName)
-        if let data = try? Data(contentsOf: url) {
-            if let decoded = try? JSONDecoder().decode([OKR].self, from: data) {
-                self.okrs = decoded
-                return
-            }
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let decoded = try decoder.decode([OKR].self, from: data)
+            self.okrs = decoded
+        } catch {
+            // Gracefully handle load failures (e.g., first launch, corrupted data)
+            print("Failed to load OKRs: \(error.localizedDescription)")
+            // Keep empty array for fresh start
+            self.okrs = []
         }
     }
     
     private func save() {
         let url = getDocumentsDirectory().appendingPathComponent(fileName)
         do {
-            let encoded = try JSONEncoder().encode(okrs)
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            let encoded = try encoder.encode(okrs)
             try encoded.write(to: url)
         } catch {
-            print("Failed to save okrs: \(error.localizedDescription)")
+            print("Failed to save OKRs: \(error.localizedDescription)")
+            // Consider logging to a more persistent error tracking system in production
         }
     }
     
